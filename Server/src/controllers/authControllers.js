@@ -2,27 +2,17 @@
 import User from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import nodemailer from "nodemailer";
 import crypto from "crypto";
 import { sendOTPEmail } from "../utils/sendOTPEmail.js";
 
 // -------------------- Helpers --------------------
 
-// Generate a unique username that doesn’t exist in the database
-const generateUsername = async (email) => {
-  const namePart = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, ""); // clean
-  let username;
-  let exists = true;
-
-  while (exists) {
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    username = `${namePart}${randomNum}`;
-
-    // Check if username already exists in DB
-    const user = await User.findOne({ username });
-    exists = !!user; // true if found, loop again
-  }
-
-  return username;
+// Generate username automatically
+const generateUsername = (email) => {
+  const namePart = email.split("@")[0];
+  const randomNum = Math.floor(1000 + Math.random() * 9000);
+  return `${namePart}${randomNum}`;
 };
 
 
