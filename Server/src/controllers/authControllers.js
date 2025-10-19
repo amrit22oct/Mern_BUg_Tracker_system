@@ -219,3 +219,25 @@ export const socialLogin = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
+
+
+export const getAllUsers = async (req, res) => {
+  try {
+    // Fetch all users from MongoDB
+    const users = await User.find();
+
+    // If no users found, return empty array (still 200 OK)
+    res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users
+    });
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error: Unable to fetch users",
+      error: error.message
+    });
+  }
+};

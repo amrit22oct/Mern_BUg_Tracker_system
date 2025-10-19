@@ -5,7 +5,8 @@ import {
   register, 
   loginWithOTP, 
   verifyOTP, 
-  socialLogin 
+  socialLogin ,
+  getAllUsers
 } from "../controllers/authControllers.js";
 
 const router = express.Router();
@@ -13,6 +14,8 @@ const router = express.Router();
 // -------------------- Email/password registration and login --------------------
 router.post("/register", register);
 router.post("/login", login);
+
+router.get("/users", getAllUsers);
 
 // -------------------- OTP login routes --------------------
 router.post("/login/otp", loginWithOTP);       // send OTP to email
