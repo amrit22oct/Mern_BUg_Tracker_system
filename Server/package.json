@@ -22,10 +22,11 @@
     "nodemailer": "^7.0.9",
     "passport": "^0.7.0",
     "passport-facebook": "^3.0.0",
-    "passport-google-oauth20": "^2.0.0"
+    "passport-google-oauth20": "^2.0.0",
+    "twilio": "^5.10.3"
   },
   "devDependencies": {
-    "eslint": "^9.37.0",
+    "eslint": "^9.38.0",
     "jest": "^30.2.0",
     "nodemon": "^3.1.10",
     "prettier": "^3.6.2",

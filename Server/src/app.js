@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
+import projectRoutes from "./routes/projectRoutes.js"
 
 const app = express();
 
@@ -21,6 +22,8 @@ app.get("/", (req, res) => {
 
 // Auth Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/project", projectRoutes);
+
 
 // 404 Handler
 app.use((req, res) => {
