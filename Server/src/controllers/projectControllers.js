@@ -30,35 +30,40 @@ export const createProject = async(req,res) => {
 */
 
 // Creating project enhance version
-export const createProject = async(req,res) => {
+
+
+export const createProject = async (req, res) => {
   try {
-    const { name, description, members, startDate, endDate,tags } = req.body;
+    const { name, description, members, startDate, endDate, tags } = req.body;
 
-    //  validate required fields
-    if(!name || name.trim().length <3  ) {
-      return res.status(400).json({message:"Project name is required and must be at least 3 character"});
+    // 🔍 Validate name
+    if (!name || name.trim().length < 3) {
+      return res
+        .status(400)
+        .json({ message: "Project name is required and must be at least 3 characters." });
     }
 
-    // check for duplicate project name 
+    // 🔍 Prevent duplicate names
     const existingProject = await Project.findOne({ name: name.trim() });
-    if (existingProject)  {
-      return res.status(400).json({message:"A project with the same name is already registered try with another name "});
+    if (existingProject) {
+      return res
+        .status(400)
+        .json({ message: "A project with this name already exists. Try another one." });
     }
 
-
-    // verify that members (if Provided) exists
+    // 👥 Validate members (if provided)
     let validMembers = [];
-    if (members && members.length>0) {
-      const foundMembers = await User.find({_id: {$in: members }});
+    if (members && members.length > 0) {
+      const foundMembers = await User.find({ _id: { $in: members } });
       if (foundMembers.length !== members.length) {
-        return res.status(400).json({message: "One or more members not found "});
+        return res.status(400).json({ message: "One or more members not found." });
       }
       validMembers = foundMembers.map((u) => u._id);
     }
 
-    //  creating the new project
+    // 🆕 Create the project
     const project = await Project.create({
-      name:name.trim(),
+      name: name.trim(),
       description: description?.trim() || "",
       members: validMembers,
       createdBy: req.user._id,
@@ -67,27 +72,43 @@ export const createProject = async(req,res) => {
       tags,
     });
 
-    // Populate members & creator info in the response
+    // 📦 Populate members and creator info
     const populatedProject = await Project.findById(project._id)
-    .populate("members","name email role")
-    .populate("createdBy", "name email role");
+      .populate("members", "name email role")
+      .populate("createdBy", "name email role");
+
+    // 🧹 Format response
+    const formattedProject = {
+      ...populatedProject.toObject(),
+      members: populatedProject.members.map((m) => ({
+        id: m._id,
+        name: m.name,
+        email: m.email,
+        role: m.role,
+      })),
+      createdBy: {
+        id: populatedProject.createdBy._id,
+        name: populatedProject.createdBy.name,
+        email: populatedProject.createdBy.email,
+        role: populatedProject.createdBy.role,
+      },
+    };
 
     res.status(201).json({
-      success:true,
-      message: "Project created Succesfully",
-      data: populatedProject,
+      success: true,
+      message: "Project created successfully.",
+      data: formattedProject,
     });
-
   } catch (error) {
-    console.error("Create Project Error", error.message);
-    res.status(500).json({message: "Internal Server Error"});
-    
+    console.error("Create Project Error:", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
 
-// Get all Project (Authenticated users)
 
+// Get all Project (Authenticated users)
+/*
 export const getProject = async(req,res) => {
    try {
       const projects = await Project.find().populate("members","name email");
@@ -102,6 +123,37 @@ export const getProject = async(req,res) => {
       
    }
 }
+*/
+
+export const getProjects = async (req, res) => {
+  try {
+    // Fetch projects and populate member info (selecting only name & email)
+    const projects = await Project.find().populate("members", "name email");
+
+    // If no projects found, return 404
+    if (!projects || projects.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No projects found",
+      });
+    }
+
+    // Success response
+    res.status(200).json({
+      success: true,
+      count: projects.length,
+      data: projects,
+    });
+  } catch (error) {
+    console.error("❌ GET PROJECTS ERROR:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Server Error. Please try again later.",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
 
 // Get single project by id
 export const getProjectById = async(req,res) => {
@@ -252,3 +304,131 @@ export const addProjectMember = async (req, res) => {
    }
  };
  
+
+//  change the staus of the project 
+
+export const updateProjectStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ message: "Status is required." });
+    }
+
+    const validStatuses = ["Active", "On Hold", "Completed", "Archived"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid project status." });
+    }
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ message: "Project not found." });
+    }
+
+    const oldStatus = project.status; // store old status
+
+    project.status = status;
+    await project.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Project status updated from "${oldStatus}" to "${status}".`,  
+      project,
+    });
+  } catch (error) {
+    console.error("Error updating project status:", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+
+
+// change the end and the start date 
+
+export const updateProjectDates = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { startDate, endDate } = req.body;
+
+    if (!startDate && !endDate) {
+      return res.status(400).json({ message: "Please provide startDate or endDate to update." });
+    }
+
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ message: "Project not found." });
+    }
+
+    const oldStart = project.startDate;
+    const oldEnd = project.endDate;
+
+    if (startDate) project.startDate = new Date(startDate);
+    if (endDate) project.endDate = new Date(endDate);
+
+    await project.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Project dates updated successfully.`,
+      oldDates: {
+        startDate: oldStart,
+        endDate: oldEnd,
+      },
+      newDates: {
+        startDate: project.startDate,
+        endDate: project.endDate,
+      },
+      project,
+    });
+  } catch (error) {
+    console.error("Error updating project dates:", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+// Transfer owenership of the project 
+
+export const transferProjectOwnership = async (req, res) => {
+  try {
+    const { id } = req.params; // project ID
+    const { newOwner } = req.body; // new owner's user ID
+
+    if (!newOwner) {
+      return res.status(400).json({ message: "New owner ID is required." });
+    }
+
+    // Find project
+    const project = await Project.findById(id);
+    if (!project) {
+      return res.status(404).json({ message: "Project not found." });
+    }
+
+    // Find new owner
+    const user = await User.findById(newOwner);
+    if (!user) {
+      return res.status(404).json({ message: "New owner user not found." });
+    }
+
+    const oldOwner = project.createdBy;
+
+    // Transfer ownership
+    project.createdBy = newOwner;
+    await project.save();
+
+    // Populate for response clarity
+    const updatedProject = await Project.findById(project._id)
+      .populate("createdBy", "name email role");
+
+    res.status(200).json({
+      success: true,
+      message: `Project ownership transferred successfully.`,
+      oldOwner,
+      newOwner: updatedProject.createdBy,
+      project: updatedProject,
+    });
+  } catch (error) {
+    console.error("Error transferring ownership:", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};

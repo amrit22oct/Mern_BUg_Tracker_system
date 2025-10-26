@@ -15,18 +15,11 @@ const projectSchema = new mongoose.Schema(
       maxlength: 500,
     },
 
-    // 👥 Members of the project
+    // 👥 Members of the project (only user references now)
     members: [
       {
-        user: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-        },
-        role: {
-          type: String,
-          enum: ["Admin", "Developer", "Tester", "Manager"],
-          default: "Developer",
-        },
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
       },
     ],
 
@@ -37,30 +30,22 @@ const projectSchema = new mongoose.Schema(
       required: true,
     },
 
-    // 📅 Project metadata
-    startDate: {
-      type: Date,
-    },
-    endDate: {
-      type: Date,
-    },
+    startDate: Date,
+    endDate: Date,
 
-    // 📊 Project status for filtering on dashboard
     status: {
       type: String,
       enum: ["Active", "On Hold", "Completed", "Archived"],
       default: "Active",
     },
 
-    // 🐞 Bugs/issues linked to this project
     issues: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Issue", // assuming you have an Issue (Bug) model
+        ref: "Issue",
       },
     ],
-
-    // 📎 Optional: tags or labels for grouping
+    
     tags: [
       {
         type: String,
@@ -69,20 +54,18 @@ const projectSchema = new mongoose.Schema(
       },
     ],
 
-    // 🔒 Archived flag (soft delete)
     archived: {
       type: Boolean,
       default: false,
     },
 
-    // 📈 Optional: performance metrics
     stats: {
       totalBugs: { type: Number, default: 0 },
       openBugs: { type: Number, default: 0 },
       resolvedBugs: { type: Number, default: 0 },
     },
   },
-  { timestamps: true } // automatically adds createdAt & updatedAt
+  { timestamps: true }
 );
 
 export default mongoose.model("Project", projectSchema);
