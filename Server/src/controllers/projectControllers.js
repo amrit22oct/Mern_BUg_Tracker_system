@@ -125,7 +125,7 @@ export const getProject = async(req,res) => {
 }
 */
 
-export const getProjects = async (req, res) => {
+export const getProject = async (req, res) => {
   try {
     // Fetch projects and populate member info (selecting only name & email)
     const projects = await Project.find().populate("members", "name email");
